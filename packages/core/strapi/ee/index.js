@@ -9,6 +9,13 @@ const { pick } = require('lodash/fp');
 const { coreStoreModel } = require('../lib/services/core-store');
 const { getRecurringCronExpression } = require('../lib/utils/cron');
 
+const ONE_MINUTE = 1000 * 60;
+const DEFAULT_FEATURES = {
+  bronze: [],
+  silver: [],
+  gold: ['sso'],
+};
+
 const publicKey = fs.readFileSync(join(__dirname, 'resources/key.pub'));
 
 const ee = {
@@ -107,8 +114,6 @@ const init = (licenseDir, logger) => {
   }
 };
 
-const oneMinute = 1000 * 60;
-
 const onlineUpdate = async (db) => {
   const transaction = await db.transaction();
 
@@ -124,7 +129,7 @@ const onlineUpdate = async (db) => {
       .execute()
       .then((result) => (result ? JSON.parse(result.value) : result));
 
-    const useStoredLicense = eeInfo?.lastOnlineCheck > Date.now() - oneMinute;
+    const useStoredLicense = eeInfo?.lastOnlineCheck > Date.now() - ONE_MINUTE;
     const license = useStoredLicense
       ? eeInfo.license
       : await fetchLicense(ee.licenseInfo.licenseKey, eeInfo?.license);
@@ -161,12 +166,6 @@ const onlineUpdate = async (db) => {
   }
 };
 
-const defaultFeatures = {
-  bronze: [],
-  silver: [],
-  gold: ['sso'],
-};
-
 const validateInfo = () => {
   if (!ee.licenseInfo.expireAt) {
     return;
@@ -181,7 +180,7 @@ const validateInfo = () => {
   ee.enabled = true;
 
   if (!ee.licenseInfo.features) {
-    ee.licenseInfo.features = defaultFeatures[ee.licenseInfo.type];
+    ee.licenseInfo.features = DEFAULT_FEATURES[ee.licenseInfo.type];
   }
 };
 
