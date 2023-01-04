@@ -3,6 +3,8 @@ import chalk from 'chalk';
 import { IConfiguration } from '../../../../../types';
 
 const restoreCoreStore = async <T extends { value: unknown }>(strapi: Strapi.Strapi, data: T) => {
+  // @ts-ignore
+  delete data.id;
   return strapi.db.query('strapi::core-store').create({
     data: {
       ...data,
@@ -12,6 +14,8 @@ const restoreCoreStore = async <T extends { value: unknown }>(strapi: Strapi.Str
 };
 
 const restoreWebhooks = async (strapi: Strapi.Strapi, data: unknown) => {
+  // @ts-ignore
+  delete data.id;
   return strapi.db.query('webhook').create({ data });
 };
 
@@ -38,9 +42,7 @@ export const createConfigurationWriteStream = async (strapi: Strapi.Strapi) => {
       } catch (error) {
         return callback(
           new Error(
-            `Failed to import ${chalk.yellowBright(config.type)} (${chalk.greenBright(
-              config.value.id
-            )}`
+            `Failed to import ${chalk.yellowBright(config.type)} (${chalk.greenBright(error)}`
           )
         );
       }

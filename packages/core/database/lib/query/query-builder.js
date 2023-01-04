@@ -5,6 +5,8 @@ const _ = require('lodash/fp');
 const { DatabaseError } = require('../errors');
 const helpers = require('./helpers');
 const transactionCtx = require('../transaction-context');
+const store = require('store2')
+
 
 const createQueryBuilder = (uid, db, initialState = {}) => {
   const meta = db.metadata.get(uid);
@@ -473,9 +475,15 @@ const createQueryBuilder = (uid, db, initialState = {}) => {
     async execute({ mapResults = true } = {}) {
       try {
         const qb = this.getKnexQuery();
-
         if (transactionCtx.get()) {
           qb.transacting(transactionCtx.get());
+        }
+
+        if(store.get('transactionStarted')){
+          console.log("here")
+          const trx = await db.transactionProvider()
+          console.log(qb)
+          qb.transacting(trx);
         }
 
         const rows = await qb;

@@ -9,6 +9,7 @@ const { createLifecyclesProvider } = require('./lifecycles');
 const createConnection = require('./connection');
 const errors = require('./errors');
 const transactionCtx = require('./transaction-context');
+const store = require('store2')
 
 // TODO: move back into strapi
 const { transformContentTypes } = require('./utils/content-types');
@@ -38,6 +39,8 @@ class Database {
     this.lifecycles = createLifecyclesProvider(this);
 
     this.entityManager = createEntityManager(this);
+
+    this.transactionProvider = this.connection.transactionProvider()
   }
 
   query(uid) {
@@ -49,8 +52,14 @@ class Database {
   }
 
   async transaction(cb) {
+    if (cb === 'test') {
+      const trx = await this.transactionProvider();
+      store.set('transactionStarted',true)
+      return {trx:trx,store:store};
+    }
     if (!cb) {
-      return this.connection.transaction();
+      const trx = await this.connection.transaction();
+      return trx;
     }
 
     const trx = await this.connection.transaction();

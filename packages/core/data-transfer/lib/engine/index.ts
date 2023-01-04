@@ -356,10 +356,12 @@ class TransferEngine<
 
       // Run the transfer stages
       await this.transferSchemas();
-      await this.transferEntities();
-      await this.transferAssets();
-      await this.transferLinks();
-      await this.transferConfiguration();
+      // await this.transferEntities();
+      // await this.transferAssets();
+      // await this.transferLinks();
+      // await this.transferConfiguration();
+      //@ts-ignore
+      await this.destinationProvider.stopTransaction();
 
       // Gracefully close the providers
       await this.close();

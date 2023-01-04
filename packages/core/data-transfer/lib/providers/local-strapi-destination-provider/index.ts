@@ -25,6 +25,7 @@ class LocalStrapiDestinationProvider implements IDestinationProvider {
   strapi?: Strapi.Strapi;
 
   trx?: any;
+  store?: any;
 
   #entitiesMapper: { [type: string]: { [id: number]: number } };
 
@@ -39,8 +40,15 @@ class LocalStrapiDestinationProvider implements IDestinationProvider {
   }
 
   async close(): Promise<void> {
-    await this.trx.commit();
+    console.log('transaction was done');
     await this.strapi?.destroy?.();
+  }
+
+  async stopTransaction() {
+    console.log('Ärrives here');
+    await this.trx.commit();
+    this.store.clearAll();
+    console.log('we stopped the transaction');
   }
 
   #validateOptions() {
@@ -61,13 +69,17 @@ class LocalStrapiDestinationProvider implements IDestinationProvider {
     if (!this.strapi) {
       throw new Error('Strapi instance not found');
     }
-    this.trx = await strapi.db.transaction();
+
+    const { trx, store } = await strapi.db.transaction('test');
+    this.trx = trx;
+    this.store = store;
     try {
       if (this.options.strategy === 'restore') {
         await this.#deleteAll();
       }
     } catch (error) {
       await this.trx.rollback();
+      throw new Error(`restore failed ${error}`);
     }
   }
 
@@ -184,7 +196,7 @@ class LocalStrapiDestinationProvider implements IDestinationProvider {
     const { strategy } = this.options;
 
     if (strategy === 'restore') {
-      return restore.createConfigurationWriteStream(this.strapi);
+      return restore.createConfigurationWriteStream(this.strapi, this.trx);
     }
 
     throw new Error(`Invalid strategy supplied: "${strategy}"`);
