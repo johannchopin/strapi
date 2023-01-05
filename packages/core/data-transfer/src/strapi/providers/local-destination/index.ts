@@ -205,7 +205,7 @@ class LocalStrapiDestinationProvider implements IDestinationProvider {
     const { strategy } = this.options;
 
     if (strategy === 'restore') {
-      return restore.createConfigurationWriteStream(this.strapi, this.trx);
+      return restore.createConfigurationWriteStream(this.strapi);
     }
 
     throw new Error(`Invalid strategy supplied: "${strategy}"`);
