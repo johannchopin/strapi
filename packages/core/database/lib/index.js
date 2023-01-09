@@ -8,8 +8,6 @@ const { createMigrationsProvider } = require('./migrations');
 const { createLifecyclesProvider } = require('./lifecycles');
 const createConnection = require('./connection');
 const errors = require('./errors');
-const transactionCtx = require('./transaction-context');
-const store = require('store2')
 
 // TODO: move back into strapi
 const { transformContentTypes } = require('./utils/content-types');
@@ -42,7 +40,7 @@ class Database {
 
     this.entityManager = createEntityManager(this);
 
-    this.transactionProvider = this.connection.transactionProvider()
+    this.transactionInstance = null;
   }
 
   query(uid) {
@@ -53,28 +51,35 @@ class Database {
     return this.entityManager.getRepository(uid);
   }
 
-  async transaction(cb) {
-    if (cb === 'test') {
-      const trx = await this.transactionProvider();
-      store.set('transactionStarted',true)
-      return {trx:trx,store:store};
-    }
-    if (!cb) {
+  async transaction(options) {
+    if (options?.global) {
       const trx = await this.connection.transaction();
-      return trx;
+      this.transactionInstance = trx;
+      return {
+        commit: async () => {
+          await trx.commit();
+          this.transactionInstance = null;
+        },
+        rollback: async () => {
+          await trx.rollback();
+          this.transactionInstance = null;
+        },
+      };
     }
 
     const trx = await this.connection.transaction();
-    return transactionCtx.run(trx, async () => {
-      try {
-        const res = await cb();
-        await trx.commit();
-        return res;
-      } catch (error) {
-        await trx.rollback();
-        throw error;
-      }
-    });
+    return {
+      commit: async () => {
+        if (!this.transactionInstance) {
+          await trx.commit();
+        }
+      },
+      rollback: async () => {
+        if (!this.transactionInstance) {
+          await trx.rollback();
+        }
+      },
+    };
   }
 
   getConnection(tableName) {

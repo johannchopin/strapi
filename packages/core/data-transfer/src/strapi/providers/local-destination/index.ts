@@ -26,6 +26,7 @@ class LocalStrapiDestinationProvider implements IDestinationProvider {
   strapi?: Strapi.Strapi;
 
   trx?: any;
+
   store?: any;
 
   /**
@@ -45,18 +46,15 @@ class LocalStrapiDestinationProvider implements IDestinationProvider {
 
   async close(): Promise<void> {
     const { autoDestroy } = this.options;
-
+    await this.trx.commit();
     // Basically `!== false` but more deterministic
     if (autoDestroy === undefined || autoDestroy === true) {
       await this.strapi?.destroy();
     }
   }
 
-  async stopTransaction() {
-    console.log('Arrives here');
-    await this.trx.commit();
-    this.store.clearAll();
-    console.log('we stopped the transaction');
+  async rollback(): Promise<void> {
+    await this.trx.rollback();
   }
 
   #validateOptions() {
@@ -78,15 +76,13 @@ class LocalStrapiDestinationProvider implements IDestinationProvider {
       throw new Error('Strapi instance not found');
     }
 
-    const { trx, store } = await strapi.db.transaction('test');
+    const trx = await strapi.db.transaction({ global: true });
     this.trx = trx;
-    this.store = store;
     try {
       if (this.options.strategy === 'restore') {
         await this.#deleteAll();
       }
     } catch (error) {
-      await this.trx.rollback();
       throw new Error(`restore failed ${error}`);
     }
   }

@@ -5,8 +5,6 @@ const _ = require('lodash/fp');
 const { DatabaseError } = require('../errors');
 const helpers = require('./helpers');
 const transactionCtx = require('../transaction-context');
-const store = require('store2')
-
 
 const createQueryBuilder = (uid, db, initialState = {}) => {
   const meta = db.metadata.get(uid);
@@ -479,11 +477,8 @@ const createQueryBuilder = (uid, db, initialState = {}) => {
           qb.transacting(transactionCtx.get());
         }
 
-        if(store.get('transactionStarted')){
-          console.log("here")
-          const trx = await db.transactionProvider()
-          console.log(qb)
-          qb.transacting(trx);
+        if (db.transactionInstance) {
+          qb.transacting(db.transactionInstance);
         }
 
         const rows = await qb;
@@ -507,7 +502,7 @@ const createQueryBuilder = (uid, db, initialState = {}) => {
       }
     },
 
-    stream({ mapResults = true } = {}) {
+    async stream({ mapResults = true } = {}) {
       if (state.type === 'select') {
         return new helpers.ReadableQuery({ qb: this, db, uid, mapResults });
       }

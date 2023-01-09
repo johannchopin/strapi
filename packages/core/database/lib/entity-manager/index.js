@@ -217,9 +217,9 @@ const createEntityManager = (db) => {
       const id = res[0].id || res[0];
 
       const trx = await strapi.db.transaction();
+
       try {
         await this.attachRelations(uid, id, data, { transaction: trx });
-
         await trx.commit();
       } catch (e) {
         await trx.rollback();

@@ -7,6 +7,7 @@ import { ILink } from '../../../types';
 export const createLinkQuery = (strapi: Strapi.Strapi) => {
   const query = () => {
     const { connection } = strapi.db;
+    const trx = strapi.db.transactionInstance;
 
     async function* generateAllForAttribute(uid: string, fieldName: string): AsyncGenerator<ILink> {
       const metadata = strapi.db.metadata.get(uid);
@@ -31,7 +32,11 @@ export const createLinkQuery = (strapi: Strapi.Strapi) => {
       if (attribute.joinColumn) {
         const joinColumnName: string = attribute.joinColumn.name;
 
-        const qb = connection.queryBuilder().select('id', joinColumnName).from(metadata.tableName);
+        const qb = connection
+          .queryBuilder()
+          .transacting(trx)
+          .select('id', joinColumnName)
+          .from(metadata.tableName);
 
         // TODO: stream the query to improve performances
         const entries = await qb;
@@ -112,7 +117,7 @@ export const createLinkQuery = (strapi: Strapi.Strapi) => {
           columns.right.order,
         ].filter((column: string | null | undefined) => !isNil(column));
 
-        qb.select(validColumns);
+        qb.transacting(trx).select(validColumns);
 
         // TODO: stream the query to improve performances
         const entries = await qb;
@@ -183,6 +188,7 @@ export const createLinkQuery = (strapi: Strapi.Strapi) => {
 
         await connection(metadata.tableName)
           .where('id', left.ref)
+          .transacting(trx)
           .update({ [joinColumnName]: right.ref });
       }
 
@@ -242,7 +248,7 @@ export const createLinkQuery = (strapi: Strapi.Strapi) => {
 
         assignOrderColumns();
 
-        await connection.insert(payload).into(name);
+        await connection.insert(payload).transacting(trx).into(name);
       }
     };
 

@@ -383,6 +383,7 @@ class TransferEngine<
       // Rollback the destination provider if an exception is thrown during the transfer
       // Note: This will be configurable in the future
       await this.destinationProvider.rollback?.(e as Error);
+      console.log(e);
       throw e;
     }
 

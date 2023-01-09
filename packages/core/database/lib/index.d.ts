@@ -159,12 +159,12 @@ export interface Database {
   migrations: MigrationProvider;
   entityManager: EntityManager;
   queryBuilder: any;
-  transaction: any;
   metadata: any;
   connection: Knex;
+  transactionInstance: Knex.Transaction;
 
   query<T extends keyof AllTypes>(uid: T): QueryFromContentType<T>;
-  transaction(cb: (em: EntityManager) => Promise<any>): Promise<void>;
+  transaction(options?: { global: Boolean }): Promise<void>;
 }
 export class Database implements Database {
   static transformContentTypes(contentTypes: any[]): ModelConfig[];
